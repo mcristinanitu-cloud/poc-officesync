@@ -3,20 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PoC QR</title>
+  <title>OfficeSync · PoC lectura de QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --verde: #22A67F;
+      --verde-osc: #14533F;
+      --azul: #3DB4FF;
+      --amarillo: #F5D547;
+      --fondo: #F2F8F5;
+      --tarjeta: #FFFFFF;
+      --tinta: #17302A;
+      --tinta-suave: #4F6760;
+      --rojo: #B83227;
+      --rojo-fondo: #FBECEA;
+      --ok-fondo: #E4F5EE;
+      --espera-fondo: #FFF8DB;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--fondo);
+      color: var(--tinta);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    /* Cabecera con las barras verticales de la portada */
+    header {
+      position: relative;
+      padding: 28px 20px 24px;
+      background: var(--verde-osc);
+      color: #fff;
+      overflow: hidden;
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 100%;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(61, 180, 255, 0.28) 0 14px,
+        transparent 14px 34px
+      );
+      -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 70%);
+              mask-image: linear-gradient(90deg, #000 0%, transparent 70%);
+    }
+    .cabecera-texto { position: relative; max-width: 440px; margin: 0 auto; }
+    h1 {
+      margin: 0;
+      font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+      font-weight: 700;
+      font-size: 2.6rem;
+      letter-spacing: 0.01em;
+      line-height: 1;
+    }
+    header p { margin: 6px 0 0; color: #CFEBDF; font-size: 0.95rem; }
+
+    main { max-width: 440px; margin: 0 auto; padding: 22px 20px 40px; }
+
+    .instruccion { margin: 0 0 16px; color: var(--tinta-suave); font-size: 0.95rem; }
+
+    /* Zona de escaneo con esquinas marcadas */
+    .visor {
+      position: relative;
+      padding: 14px;
+      background: #0F211C;
+      border-radius: 14px;
+    }
+    #reader {
+      width: 100%;
+      min-height: 260px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0F211C;
+    }
+    #reader video { width: 100% !important; display: block; }
+    .esquina {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 4px solid var(--amarillo);
+      pointer-events: none;
+    }
+    .esquina.arriba-izq { top: 6px; left: 6px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
+    .esquina.arriba-der { top: 6px; right: 6px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
+    .esquina.abajo-izq { bottom: 6px; left: 6px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
+    .esquina.abajo-der { bottom: 6px; right: 6px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
+
+    /* Resultado */
+    #resultado {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 6px solid var(--amarillo);
+      border-radius: 10px;
+      background: var(--espera-fondo);
+      transition: background-color 0.25s, border-color 0.25s;
+    }
+    #resultado .titulo { margin: 0; font-weight: 600; font-size: 1.05rem; }
+    #resultado .detalle {
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+      color: var(--tinta-suave);
+      word-break: break-word;
+    }
+    #resultado .codigo {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.07);
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: 1.05rem;
+    }
+    #resultado .codigo:empty { display: none; }
+
+    #resultado.ok { background: var(--ok-fondo); border-left-color: var(--verde); }
+    #resultado.ok .titulo { color: var(--verde-osc); }
+    #resultado.error { background: var(--rojo-fondo); border-left-color: var(--rojo); }
+    #resultado.error .titulo { color: var(--rojo); }
+
+    footer { margin-top: 22px; font-size: 0.82rem; color: var(--tinta-suave); }
+
+    :focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
 </head>
 <body>
-  <h1>PoC lectura de QR</h1>
-  <div id="reader" style="width:300px"></div>
-  <p id="resultado">Esperando QR...</p>
+  <header>
+    <div class="cabecera-texto">
+      <h1>OfficeSync</h1>
+      <p>Prueba de concepto: check-in con código QR</p>
+    </div>
+  </header>
+
+  <main>
+    <p class="instruccion">Apunta la cámara al código QR de la mesa. La lectura es automática.</p>
+
+    <div class="visor">
+      <div id="reader"></div>
+      <span class="esquina arriba-izq"></span>
+      <span class="esquina arriba-der"></span>
+      <span class="esquina abajo-izq"></span>
+      <span class="esquina abajo-der"></span>
+    </div>
+
+    <div id="resultado" role="status" aria-live="polite">
+      <p class="titulo">Esperando QR…</p>
+      <p class="detalle">Aún no se ha leído ningún código.</p>
+      <span class="codigo"></span>
+    </div>
+
+    <footer>OE3 / RF7 · La cámara solo funciona con HTTPS o en localhost.</footer>
+  </main>
+
   <script>
+    const panel = document.getElementById("resultado");
+    const titulo = panel.querySelector(".titulo");
+    const detalle = panel.querySelector(".detalle");
+    const codigo = panel.querySelector(".codigo");
+
+    function mostrar(tipo, textoTitulo, textoDetalle, textoCodigo) {
+      panel.className = tipo;
+      titulo.textContent = textoTitulo;
+      detalle.textContent = textoDetalle;
+      codigo.textContent = textoCodigo || "";
+    }
+
     const lector = new Html5Qrcode("reader");
     lector.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      (texto) => { document.getElementById("resultado").textContent = "Leído: " + texto; }
-    );
+      { fps: 10, qrbox: 220 },
+      (texto) => {
+        const leido = texto.trim();
+        if (leido.startsWith("MESA-")) {
+          mostrar("ok", "Mesa detectada", "El código corresponde a una mesa de OfficeSync.", leido);
+        } else {
+          mostrar("error", "QR no válido para OfficeSync", "El código leído no es de una mesa.", leido);
+        }
+      }
+    ).catch((err) => {
+      mostrar("error", "No se pudo abrir la cámara",
+        "Permite el acceso a la cámara y abre la página con HTTPS o desde localhost.", String(err));
+    });
   </script>
 </body>
 </html>
