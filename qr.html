@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OfficeSync · PoC lectura de QR</title>
+  <title>OfficeSync · PoC mapa interactivo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --bg: #EDF2EE;
@@ -21,12 +22,7 @@
       --verde: #89D957;
       --verde-oscuro: #1A3812;
       --lima: #C9E265;
-      --naranja: #F97316;
       --aviso: #D97706;
-      --rojo: #DC2626;
-      --rojo-fondo: #FEE2E2;
-      --ok-fondo: #F0FDF4;
-      --espera-fondo: #FEF3C7;
       --radio: 14px;
       --sombra: 0 10px 30px -5px rgba(12, 22, 19, 0.08);
     }
@@ -40,12 +36,9 @@
       font-family: "Inter", system-ui, -apple-system, sans-serif;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    .contenedor { width: 100%; max-width: 680px; margin: 0 auto; padding: 0 20px; }
+    .contenedor { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
 
     /* Topbar */
     .nav {
@@ -83,7 +76,16 @@
       background: rgba(201, 226, 101, 0.08);
     }
 
-    /* Hero Wrapper */
+     .marca-img {
+      height: 50px;
+      width: auto;
+      max-width: 160px;
+      object-fit: contain;
+      flex: none;
+      display: block;
+    }
+
+    /* Hero */
     .hero-wrapper {
       background: var(--oscuro);
       border-bottom: 3px solid var(--verde);
@@ -102,83 +104,64 @@
       margin: 0;
       font-family: "Barlow Condensed", sans-serif;
       font-weight: 700;
-      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-size: clamp(2rem, 5vw, 3rem);
       line-height: 1;
       letter-spacing: 0.01em;
       text-transform: uppercase;
       color: #FFFFFF;
     }
 
-    main { flex: 1; padding-bottom: 40px; }
-
-    .instruccion {
-      margin: 0 0 20px;
-      color: var(--suave);
-      font-size: 0.95rem;
-      font-weight: 500;
+    /* Rejilla Principal */
+    .rejilla {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 24px;
+      padding-bottom: 40px;
+      align-items: stretch;
     }
 
-    /* Visor de Cámara */
-    .visor-marco {
+    /* Mapa */
+    .mapa-marco {
       position: relative;
       border: 1px solid var(--linea-oscura);
       border-radius: var(--radio);
       overflow: hidden;
       background: var(--oscuro);
       box-shadow: var(--sombra);
-      padding: 16px;
+      display: flex;
+      height: 100%;
     }
+    #mapa { width: 100%; height: 100%; min-height: 540px; background: #0E1A1F; }
 
-    #reader {
-      width: 100%;
-      min-height: 280px;
-      border-radius: 10px;
-      overflow: hidden;
-      background: #0E1A1F;
-    }
-
-    #reader video { width: 100% !important; display: block; object-fit: cover; }
-
-    .esquina {
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border: 4px solid var(--naranja);
-      pointer-events: none;
-      z-index: 10;
-    }
-    .esquina.arriba-izq { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
-    .esquina.arriba-der { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
-    .esquina.abajo-izq { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
-    .esquina.abajo-der { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
-
-    /* Panel de Resultado */
-    .panel-resultado {
-      margin-top: 24px;
+    /* Panel Lateral */
+    .panel {
+      display: flex;
+      flex-direction: column;
       border: 1px solid var(--linea);
       border-radius: var(--radio);
       background: var(--panel);
       box-shadow: var(--sombra);
-      overflow: hidden;
     }
-
+    
     .panel-cabecera {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 14px 20px;
+      padding: 16px 20px;
       background: var(--oscuro);
       color: #FFFFFF;
+      border-radius: var(--radio) var(--radio) 0 0;
     }
-
+    .panel-cabecera .etiqueta { color: #A3B8AC; }
+    
     .etiqueta {
       margin: 0;
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #A3B8AC;
+      color: var(--suave);
     }
 
     .chip {
@@ -200,72 +183,160 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--aviso);
+      background: var(--verde);
     }
-    .chip[data-estado="espera"]::before { background: var(--aviso); animation: latido 1.4s ease-in-out infinite; }
+    .chip[data-estado="cargando"]::before { animation: latido 1.4s ease-in-out infinite; }
     .chip[data-estado="ok"]::before { background: var(--verde); animation: none; }
-    .chip[data-estado="error"]::before { background: var(--rojo); animation: none; }
+    .chip[data-estado="aprox"]::before { background: var(--aviso); animation: none; }
 
-    .panel-cuerpo {
-      padding: 20px;
-      border-left: 6px solid var(--aviso);
-      background: var(--espera-fondo);
-      transition: background-color 0.25s, border-color 0.25s;
+    /* Formulario de Búsqueda */
+    .buscador {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--linea);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #FAFDF9;
     }
-
-    .panel-cuerpo.ok {
-      background: var(--ok-fondo);
-      border-left-color: var(--verde-oscuro);
+    .campo-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-
-    .panel-cuerpo.error {
-      background: var(--rojo-fondo);
-      border-left-color: var(--rojo);
-    }
-
-    .titulo {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--texto);
-    }
-
-    .panel-cuerpo.ok .titulo { color: var(--verde-oscuro); }
-    .panel-cuerpo.error .titulo { color: var(--rojo); }
-
-    .detalle {
-      margin: 6px 0 0;
-      font-size: 0.95rem;
-      color: var(--suave);
-      word-break: break-word;
-    }
-
-    .codigo {
-      display: inline-block;
-      margin-top: 12px;
-      padding: 6px 12px;
+    .campo-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--linea);
       border-radius: 8px;
-      background: rgba(12, 22, 19, 0.08);
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--oscuro);
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: #FFFFFF;
+      color: var(--texto);
+      font-weight: 500;
     }
-    .codigo:empty { display: none; }
+    .campo-input:focus {
+      outline: none;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+    .btn-calcular {
+      width: 100%;
+      padding: 12px;
+      background: var(--verde);
+      color: var(--verde-oscuro);
+      border: none;
+      border-radius: 8px;
+      font-family: "Barlow Condensed", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+    }
+    .btn-calcular:hover {
+      background: var(--lima);
+      transform: translateY(-1px);
+    }
 
-    footer {
-      padding: 24px 0 40px;
-      border-top: 1px solid var(--linea);
-      font-size: 0.82rem;
+    /* Cifras */
+    .cifras { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--linea); }
+    .cifra-caja { padding: 18px 20px; }
+    .cifra-caja + .cifra-caja { border-left: 1px solid var(--linea); }
+    .cifra {
+      margin: 4px 0 0;
+      font-family: "Barlow Condensed", sans-serif;
+      font-weight: 700;
+      font-size: 2.5rem;
+      line-height: 1;
+      color: var(--verde-oscuro);
+    }
+    .cifra small { margin-left: 4px; font-size: 1rem; font-weight: 600; color: var(--suave); }
+
+    /* CO2 */
+    .co2 { padding: 18px 20px; background: #F6FAF4; }
+    .co2 .cifra { color: #047857; }
+    .formula {
+      margin: 6px 0 0;
+      font-size: 0.78rem;
       color: var(--suave);
+      font-variant-numeric: tabular-nums;
+    }
+    .pasajeros { margin: 14px 0 0; padding: 0; border: 0; min-width: 0; }
+    .pasajeros legend { padding: 0; margin-bottom: 6px; }
+    .segmentos {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--linea);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .segmentos input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmentos label {
+      display: block;
+      padding: 8px 0;
+      text-align: center;
+      font-weight: 700;
+      color: var(--suave);
+      cursor: pointer;
+      border-left: 1px solid var(--linea);
+      transition: background 0.15s, color 0.15s;
+    }
+    .segmentos label:first-of-type { border-left: 0; }
+    .segmentos input:checked + label { background: var(--verde); color: var(--verde-oscuro); }
+
+    .nota { margin: 0; padding: 12px 20px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--suave); }
+
+    .leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--linea);
+      font-size: 0.8rem;
+      color: var(--suave);
+      border-radius: 0 0 var(--radio) var(--radio);
+    }
+    .leyenda span { display: inline-flex; align-items: center; gap: 8px; }
+    .trazo { width: 22px; height: 0; border-top: 4px solid var(--verde-oscuro); border-radius: 2px; }
+    .trazo.punteado { border-top: 4px dotted var(--aviso); }
+
+    footer { padding: 24px 0 40px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--suave); }
+
+    /* Marcadores */
+    .pin { position: relative; width: 22px; height: 22px; }
+    .pin i {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      background: var(--teal);
+    }
+    .pin.destino i { background: var(--verde-oscuro); box-shadow: 0 0 0 2px var(--verde); }
+
+    .leaflet-tooltip.etiqueta-mapa {
+      padding: 6px 12px;
+      border: 1px solid var(--linea);
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: var(--texto);
+      font-family: "Inter", sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: var(--sombra);
     }
 
     @keyframes latido { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; animation: none !important; }
+    @media (max-width: 960px) {
+      .rejilla { grid-template-columns: 1fr; }
+      #mapa { height: 400px; min-height: 400px; }
     }
   </style>
 </head>
@@ -273,87 +344,227 @@
   <nav class="nav">
     <div class="contenedor">
       <div class="marca">
-        <!-- Logo SVG actualizado con detalle en naranja (--naranja) -->
-        <svg viewBox="0 0 40 40" aria-hidden="true">
-          <circle cx="20" cy="20" r="17" fill="none" stroke="#0D9488" stroke-width="3"/>
-          <ellipse cx="20" cy="20" rx="17" ry="7" fill="none" stroke="#89D957" stroke-width="2.5" transform="rotate(-30 20 20)"/>
-          <circle cx="32" cy="12.5" r="3.5" fill="#F97316"/>
-        </svg>
+        <!-- Logo cargado mediante archivo de imagen -->
+        <img src="officesync (3).png" alt="OfficeSync Logo" class="marca-img">
         <div class="marca-texto"><b>Office</b><span>Sync</span></div>
       </div>
       <div class="etiqueta-nav">PoC · Escáner QR</div>
     </div>
   </nav>
+  
 
   <header class="hero-wrapper">
-    <div class="contenedor">
-      <p class="sobretitulo">Prueba de concepto · Check-in automático</p>
-      <h1>Lectura de Código QR</h1>
+    <div class="contenedor hero">
+      <p class="sobretitulo">Prueba de concepto · Calculadora en tiempo real</p>
+      <h1>Calcula tu ruta y el CO₂ ahorrado</h1>
     </div>
   </header>
 
   <main class="contenedor">
-    <p class="instruccion">Apunta la cámara al código QR de la mesa. La lectura es automática.</p>
-
-    <div class="visor-marco">
-      <div id="reader"></div>
-      <span class="esquina arriba-izq"></span>
-      <span class="esquina arriba-der"></span>
-      <span class="esquina abajo-izq"></span>
-      <span class="esquina abajo-der"></span>
-    </div>
-
-    <div class="panel-resultado">
-      <div class="panel-cabecera">
-        <p class="etiqueta">Estado de Lectura</p>
-        <span id="chip" class="chip" data-estado="espera" role="status" aria-live="polite">En espera</span>
+    <div class="rejilla">
+      <div class="mapa-marco">
+        <div id="mapa" role="img" aria-label="Mapa con la ruta calculada"></div>
       </div>
-      <div id="resultado-cuerpo" class="panel-cuerpo">
-        <p class="titulo" id="res-titulo">Esperando QR…</p>
-        <p class="detalle" id="res-detalle">Aún no se ha leído ningún código.</p>
-        <span class="codigo" id="res-codigo"></span>
-      </div>
+
+      <aside class="panel" aria-label="Buscador y datos del trayecto">
+        <div class="panel-cabecera">
+          <p class="etiqueta">Calculadora de Ruta</p>
+          <span id="chip" class="chip" data-estado="ok" role="status" aria-live="polite">Listo</span>
+        </div>
+
+        <!-- Formulario Interactivo -->
+        <form id="form-ruta" class="buscador" onsubmit="event.preventDefault(); calcularNuevaRuta();">
+          <div class="campo-grupo">
+            <label for="in-origen">Lugar de Origen</label>
+            <input type="text" id="in-origen" class="campo-input" value="Onda, Castellón" placeholder="Ej: Onda" required>
+          </div>
+          <div class="campo-grupo">
+            <label for="in-destino">Lugar de Destino</label>
+            <input type="text" id="in-destino" class="campo-input" value="Castelló de la Plana" placeholder="Ej: Castellón" required>
+          </div>
+          <button type="submit" class="btn-calcular">Calcular Nueva Ruta</button>
+        </form>
+
+        <div class="cifras">
+          <div class="cifra-caja">
+            <p class="etiqueta">Distancia</p>
+            <p class="cifra"><span id="km">--</span><small>km</small></p>
+          </div>
+          <div class="cifra-caja">
+            <p class="etiqueta">Tiempo</p>
+            <p class="cifra"><span id="min">--</span><small>min</small></p>
+          </div>
+        </div>
+
+        <div class="co2">
+          <p class="etiqueta">CO₂ ahorrado</p>
+          <p class="cifra"><span id="co2">--</span><small>kg</small></p>
+          <p class="formula" id="formula">Ingresa los datos para calcular…</p>
+          <fieldset class="pasajeros">
+            <legend class="etiqueta">Pasajeros en el coche</legend>
+            <div class="segmentos">
+              <input type="radio" name="pasajeros" id="p1" value="1"><label for="p1">1</label>
+              <input type="radio" name="pasajeros" id="p2" value="2" checked><label for="p2">2</label>
+              <input type="radio" name="pasajeros" id="p3" value="3"><label for="p3">3</label>
+              <input type="radio" name="pasajeros" id="p4" value="4"><label for="p4">4</label>
+            </div>
+          </fieldset>
+        </div>
+
+        <p class="nota" id="estado">Introduce las direcciones y pulsa en calcular.</p>
+
+        <div class="leyenda">
+          <span><i class="trazo"></i> Ruta por carretera</span>
+          <span><i class="trazo punteado"></i> Aproximación</span>
+        </div>
+      </aside>
     </div>
   </main>
 
   <footer>
-    <div class="contenedor">
-      OfficeSync · OE3 / RF7 · La cámara solo funciona bajo HTTPS o en localhost.
-    </div>
+    <div class="contenedor">OfficeSync · Proyecto Intermodular II · Mapa © OpenStreetMap · Rutas OSRM · Geocodificación Nominatim · CO₂ MITECO (0,099 kg/km)[cite: 12, 17, 21].</div>
   </footer>
 
   <script>
-    const chip = document.getElementById("chip");
-    const panelCuerpo = document.getElementById("resultado-cuerpo");
-    const titulo = document.getElementById("res-titulo");
-    const detalle = document.getElementById("res-detalle");
-    const codigo = document.getElementById("res-codigo");
+    const FACTOR_CO2 = 0.099; // Factor de emisión del MITECO[cite: 12]
 
-    function mostrar(tipo, chipText, textoTitulo, textoDetalle, textoCodigo) {
-      chip.dataset.estado = tipo;
-      chip.textContent = chipText;
-      panelCuerpo.className = "panel-cuerpo " + tipo;
-      titulo.textContent = textoTitulo;
-      detalle.textContent = textoDetalle;
-      codigo.textContent = textoCodigo || "";
+    const mapa = L.map('mapa', { zoomControl: true }).setView([39.9864, -0.0513], 11);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(mapa);
+
+    let markerOrigen = null;
+    let markerDestino = null;
+    let capaSombra = null;
+    let capaLinea = null;
+    let distanciaKm = null;
+    let aproximada = false;
+
+    const el = (id) => document.getElementById(id);
+    const formato = (n, d) => n.toFixed(d).replace('.', ',');
+
+    function pin(clase) {
+      return L.divIcon({
+        className: '',
+        html: '<div class="pin ' + clase + '"><i></i></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
     }
 
-    const lector = new Html5Qrcode("reader");
-    lector.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 220 },
-      (texto) => {
-        const leido = texto.trim();
-        if (leido.startsWith("MESA-")) {
-          mostrar("ok", "Mesa Detectada", "Mesa detectada", "El código corresponde a una mesa de OfficeSync.", leido);
-        } else {
-          mostrar("error", "No Válido", "QR no válido para OfficeSync", "El código leído no pertenece a una mesa de OfficeSync.", leido);
+    function estado(tipo, chipText, mensaje) {
+      el('chip').dataset.estado = tipo;
+      el('chip').textContent = chipText;
+      el('estado').textContent = mensaje;
+    }
+
+    function actualizarCO2() {
+      if (distanciaKm === null) return;
+      const pasajeros = Number(document.querySelector('input[name="pasajeros"]:checked').value);
+      const ahorro = distanciaKm * FACTOR_CO2 * pasajeros;
+      el('co2').textContent = (aproximada ? '≈ ' : '') + formato(ahorro, 2);
+      el('formula').textContent = formato(distanciaKm, 1) + ' km × ' +
+        String(FACTOR_CO2).replace('.', ',') + ' kg/km × ' +
+        pasajeros + (pasajeros === 1 ? ' pasajero' : ' pasajeros');
+    }
+
+    document.querySelectorAll('input[name="pasajeros"]').forEach((r) => r.addEventListener('change', actualizarCO2));
+
+    // Servicio gratuito para convertir nombre de ciudad/calle a Coordenadas GPS
+    async function geocodificar(nombreLugar) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreLugar)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data || data.length === 0) throw new Error(`No se encontró "${nombreLugar}"`);
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+
+    function limpiarCapasAnteriores() {
+      if (markerOrigen) mapa.removeLayer(markerOrigen);
+      if (markerDestino) mapa.removeLayer(markerDestino);
+      if (capaSombra) mapa.removeLayer(capaSombra);
+      if (capaLinea) mapa.removeLayer(capaLinea);
+    }
+
+    function dibujarLineaRuta(puntos, esAprox) {
+      capaSombra = L.polyline(puntos, { color: '#FFFFFF', weight: 8, opacity: 0.9 }).addTo(mapa);
+      capaLinea = L.polyline(puntos, {
+        color: esAprox ? '#D97706' : '#1A3812',
+        weight: 5,
+        dashArray: esAprox ? '1 10' : null,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(mapa);
+
+      mapa.fitBounds(capaLinea.getBounds(), { padding: [60, 60] });
+    }
+
+    async function calcularNuevaRuta() {
+      const txtOrigen = el('in-origen').value.trim();
+      const txtDestino = el('in-destino').value.trim();
+
+      if (!txtOrigen || !txtDestino) return;
+
+      estado('cargando', 'Buscando', 'Obteniendo coordenadas de los lugares...');
+
+      try {
+        // 1. Obtener coordenadas
+        const coordsOrigen = await geocodificar(txtOrigen);
+        const coordsDestino = await geocodificar(txtDestino);
+
+        limpiarCapasAnteriores();
+
+        // 2. Colocar Marcadores
+        markerOrigen = L.marker(coordsOrigen, { icon: pin('origen') })
+          .addTo(mapa)
+          .bindTooltip(txtOrigen, { permanent: true, direction: 'top', offset: [0, -14], className: 'etiqueta-mapa' });
+
+        markerDestino = L.marker(coordsDestino, { icon: pin('destino') })
+          .addTo(mapa)
+          .bindTooltip(txtDestino, { permanent: true, direction: 'top', offset: [0, -14], className: 'etiqueta-mapa' });
+
+        // 3. Trazar Ruta por Carretera con OSRM
+        const urlOSRM = `https://router.project-osrm.org/route/v1/driving/${coordsOrigen[1]},${coordsOrigen[0]};${coordsDestino[1]},${coordsDestino[0]}?overview=full&geometries=geojson`;
+
+        try {
+          const resOSRM = await fetch(urlOSRM);
+          const datosOSRM = await resOSRM.json();
+
+          if (datosOSRM.code !== 'Ok') throw new Error();
+
+          const ruta = datosOSRM.routes[0];
+          const puntosOSRM = ruta.geometry.coordinates.map((c) => [c[1], c[0]]);
+
+          dibujarLineaRuta(puntosOSRM, false);
+          distanciaKm = ruta.distance / 1000;
+          aproximada = false;
+
+          el('km').textContent = formato(distanciaKm, 1);
+          el('min').textContent = Math.round(ruta.duration / 60);
+          actualizarCO2();
+          estado('ok', 'Calculado', 'Ruta por carretera obtenida correctamente.');
+
+        } catch (errOSRM) {
+          // Fallback a línea recta
+          dibujarLineaRuta([coordsOrigen, coordsDestino], true);
+          distanciaKm = mapa.distance(coordsOrigen, coordsDestino) / 1000;
+          aproximada = true;
+
+          el('km').textContent = '≈ ' + formato(distanciaKm, 1);
+          el('min').textContent = '--';
+          actualizarCO2();
+          estado('aprox', 'Aproximada', 'No se pudo trazar la carretera. Mostrando distancia directa.');
         }
+
+      } catch (err) {
+        estado('aprox', 'Error', err.message || 'Error al buscar las ubicaciones.');
       }
-    ).catch((err) => {
-      mostrar("error", "Error Cámara", "No se pudo abrir la cámara",
-        "Permite el acceso a la cámara y abre la página con HTTPS o desde localhost.", String(err));
-    });
+    }
+
+    // Trazado inicial automático al cargar la página
+    calcularNuevaRuta();
   </script>
 </body>
 </html>
