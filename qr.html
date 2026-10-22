@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PoC QR</title>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <h1>PoC lectura de QR</h1>
+  <div id="reader" style="width:300px"></div>
+  <p id="resultado">Esperando QR...</p>
+  <script>
+    const lector = new Html5Qrcode("reader");
+    lector.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (texto) => { document.getElementById("resultado").textContent = "Leído: " + texto; }
+    );
+  </script>
+</body>
+</html>
