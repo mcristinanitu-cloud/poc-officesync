@@ -6,151 +6,296 @@
   <title>OfficeSync · PoC lectura de QR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root {
-      --verde: #22A67F;
-      --verde-osc: #14533F;
-      --azul: #3DB4FF;
-      --amarillo: #F5D547;
-      --fondo: #F2F8F5;
-      --tarjeta: #FFFFFF;
-      --tinta: #17302A;
-      --tinta-suave: #4F6760;
-      --rojo: #B83227;
-      --rojo-fondo: #FBECEA;
-      --ok-fondo: #E4F5EE;
-      --espera-fondo: #FFF8DB;
+      --bg: #EDF2EE;
+      --panel: #FFFFFF;
+      --oscuro: #0C1613;
+      --linea: #D2DCD4;
+      --linea-oscura: #21352E;
+      --texto: #15221C;
+      --suave: #57685D;
+      --teal: #0D9488;
+      --verde: #89D957;
+      --verde-oscuro: #1A3812;
+      --lima: #C9E265;
+      --naranja: #F97316;
+      --aviso: #D97706;
+      --rojo: #DC2626;
+      --rojo-fondo: #FEE2E2;
+      --ok-fondo: #F0FDF4;
+      --espera-fondo: #FEF3C7;
+      --radio: 14px;
+      --sombra: 0 10px 30px -5px rgba(12, 22, 19, 0.08);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      min-height: 100vh;
-      background: var(--fondo);
-      color: var(--tinta);
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--texto);
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Cabecera con las barras verticales de la portada */
-    header {
-      position: relative;
-      padding: 28px 20px 24px;
-      background: var(--verde-osc);
-      color: #fff;
-      overflow: hidden;
+    .contenedor { width: 100%; max-width: 680px; margin: 0 auto; padding: 0 20px; }
+
+    /* Topbar */
+    .nav {
+      background: var(--oscuro);
+      border-bottom: 1px solid var(--linea-oscura);
     }
-    header::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 100%;
-      background: repeating-linear-gradient(
-        90deg,
-        rgba(61, 180, 255, 0.28) 0 14px,
-        transparent 14px 34px
-      );
-      -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 70%);
-              mask-image: linear-gradient(90deg, #000 0%, transparent 70%);
+    .nav .contenedor {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
     }
-    .cabecera-texto { position: relative; max-width: 440px; margin: 0 auto; }
+    .marca { display: flex; align-items: center; gap: 12px; }
+    .marca svg { width: 34px; height: 34px; flex: none; }
+    .marca-texto {
+      font-family: "Barlow Condensed", sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+    .marca-texto b { font-weight: 700; }
+    .marca-texto span { font-weight: 700; color: var(--verde); }
+    .etiqueta-nav {
+      padding: 6px 14px;
+      border: 1px solid var(--linea-oscura);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--lima);
+      background: rgba(201, 226, 101, 0.08);
+    }
+
+    /* Hero Wrapper */
+    .hero-wrapper {
+      background: var(--oscuro);
+      border-bottom: 3px solid var(--verde);
+      padding: 32px 0 28px;
+      margin-bottom: 28px;
+    }
+    .sobretitulo {
+      margin: 0 0 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--lima);
+    }
     h1 {
       margin: 0;
-      font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+      font-family: "Barlow Condensed", sans-serif;
       font-weight: 700;
-      font-size: 2.6rem;
-      letter-spacing: 0.01em;
+      font-size: clamp(2rem, 5vw, 2.8rem);
       line-height: 1;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      color: #FFFFFF;
     }
-    header p { margin: 6px 0 0; color: #CFEBDF; font-size: 0.95rem; }
 
-    main { max-width: 440px; margin: 0 auto; padding: 22px 20px 40px; }
+    main { flex: 1; padding-bottom: 40px; }
 
-    .instruccion { margin: 0 0 16px; color: var(--tinta-suave); font-size: 0.95rem; }
+    .instruccion {
+      margin: 0 0 20px;
+      color: var(--suave);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
 
-    /* Zona de escaneo con esquinas marcadas */
-    .visor {
+    /* Visor de Cámara */
+    .visor-marco {
       position: relative;
-      padding: 14px;
-      background: #0F211C;
-      border-radius: 14px;
+      border: 1px solid var(--linea-oscura);
+      border-radius: var(--radio);
+      overflow: hidden;
+      background: var(--oscuro);
+      box-shadow: var(--sombra);
+      padding: 16px;
     }
+
     #reader {
       width: 100%;
-      min-height: 260px;
-      border-radius: 8px;
+      min-height: 280px;
+      border-radius: 10px;
       overflow: hidden;
-      background: #0F211C;
+      background: #0E1A1F;
     }
-    #reader video { width: 100% !important; display: block; }
+
+    #reader video { width: 100% !important; display: block; object-fit: cover; }
+
     .esquina {
       position: absolute;
       width: 28px;
       height: 28px;
-      border: 4px solid var(--amarillo);
+      border: 4px solid var(--naranja);
       pointer-events: none;
+      z-index: 10;
     }
-    .esquina.arriba-izq { top: 6px; left: 6px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
-    .esquina.arriba-der { top: 6px; right: 6px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
-    .esquina.abajo-izq { bottom: 6px; left: 6px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
-    .esquina.abajo-der { bottom: 6px; right: 6px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
+    .esquina.arriba-izq { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
+    .esquina.arriba-der { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
+    .esquina.abajo-izq { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
+    .esquina.abajo-der { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
 
-    /* Resultado */
-    #resultado {
-      margin-top: 18px;
-      padding: 16px 18px;
-      border-left: 6px solid var(--amarillo);
-      border-radius: 10px;
+    /* Panel de Resultado */
+    .panel-resultado {
+      margin-top: 24px;
+      border: 1px solid var(--linea);
+      border-radius: var(--radio);
+      background: var(--panel);
+      box-shadow: var(--sombra);
+      overflow: hidden;
+    }
+
+    .panel-cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--oscuro);
+      color: #FFFFFF;
+    }
+
+    .etiqueta {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #A3B8AC;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      border: 1px solid var(--linea-oscura);
+    }
+    .chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--aviso);
+    }
+    .chip[data-estado="espera"]::before { background: var(--aviso); animation: latido 1.4s ease-in-out infinite; }
+    .chip[data-estado="ok"]::before { background: var(--verde); animation: none; }
+    .chip[data-estado="error"]::before { background: var(--rojo); animation: none; }
+
+    .panel-cuerpo {
+      padding: 20px;
+      border-left: 6px solid var(--aviso);
       background: var(--espera-fondo);
       transition: background-color 0.25s, border-color 0.25s;
     }
-    #resultado .titulo { margin: 0; font-weight: 600; font-size: 1.05rem; }
-    #resultado .detalle {
-      margin: 4px 0 0;
+
+    .panel-cuerpo.ok {
+      background: var(--ok-fondo);
+      border-left-color: var(--verde-oscuro);
+    }
+
+    .panel-cuerpo.error {
+      background: var(--rojo-fondo);
+      border-left-color: var(--rojo);
+    }
+
+    .titulo {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .panel-cuerpo.ok .titulo { color: var(--verde-oscuro); }
+    .panel-cuerpo.error .titulo { color: var(--rojo); }
+
+    .detalle {
+      margin: 6px 0 0;
       font-size: 0.95rem;
-      color: var(--tinta-suave);
+      color: var(--suave);
       word-break: break-word;
     }
-    #resultado .codigo {
+
+    .codigo {
       display: inline-block;
-      margin-top: 8px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: rgba(0, 0, 0, 0.07);
-      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      margin-top: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(12, 22, 19, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
       font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--oscuro);
     }
-    #resultado .codigo:empty { display: none; }
+    .codigo:empty { display: none; }
 
-    #resultado.ok { background: var(--ok-fondo); border-left-color: var(--verde); }
-    #resultado.ok .titulo { color: var(--verde-osc); }
-    #resultado.error { background: var(--rojo-fondo); border-left-color: var(--rojo); }
-    #resultado.error .titulo { color: var(--rojo); }
+    footer {
+      padding: 24px 0 40px;
+      border-top: 1px solid var(--linea);
+      font-size: 0.82rem;
+      color: var(--suave);
+    }
 
-    footer { margin-top: 22px; font-size: 0.82rem; color: var(--tinta-suave); }
+    @keyframes latido { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    :focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+    :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
 
     @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; }
+      * { transition: none !important; animation: none !important; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="cabecera-texto">
-      <h1>OfficeSync</h1>
-      <p>Prueba de concepto: check-in con código QR</p>
+  <nav class="nav">
+    <div class="contenedor">
+      <div class="marca">
+        <!-- Logo SVG actualizado con detalle en naranja (--naranja) -->
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="#0D9488" stroke-width="3"/>
+          <ellipse cx="20" cy="20" rx="17" ry="7" fill="none" stroke="#89D957" stroke-width="2.5" transform="rotate(-30 20 20)"/>
+          <circle cx="32" cy="12.5" r="3.5" fill="#F97316"/>
+        </svg>
+        <div class="marca-texto"><b>Office</b><span>Sync</span></div>
+      </div>
+      <div class="etiqueta-nav">PoC · Escáner QR</div>
+    </div>
+  </nav>
+
+  <header class="hero-wrapper">
+    <div class="contenedor">
+      <p class="sobretitulo">Prueba de concepto · Check-in automático</p>
+      <h1>Lectura de Código QR</h1>
     </div>
   </header>
 
-  <main>
+  <main class="contenedor">
     <p class="instruccion">Apunta la cámara al código QR de la mesa. La lectura es automática.</p>
 
-    <div class="visor">
+    <div class="visor-marco">
       <div id="reader"></div>
       <span class="esquina arriba-izq"></span>
       <span class="esquina arriba-der"></span>
@@ -158,23 +303,36 @@
       <span class="esquina abajo-der"></span>
     </div>
 
-    <div id="resultado" role="status" aria-live="polite">
-      <p class="titulo">Esperando QR…</p>
-      <p class="detalle">Aún no se ha leído ningún código.</p>
-      <span class="codigo"></span>
+    <div class="panel-resultado">
+      <div class="panel-cabecera">
+        <p class="etiqueta">Estado de Lectura</p>
+        <span id="chip" class="chip" data-estado="espera" role="status" aria-live="polite">En espera</span>
+      </div>
+      <div id="resultado-cuerpo" class="panel-cuerpo">
+        <p class="titulo" id="res-titulo">Esperando QR…</p>
+        <p class="detalle" id="res-detalle">Aún no se ha leído ningún código.</p>
+        <span class="codigo" id="res-codigo"></span>
+      </div>
     </div>
-
-    <footer>OE3 / RF7 · La cámara solo funciona con HTTPS o en localhost.</footer>
   </main>
 
-  <script>
-    const panel = document.getElementById("resultado");
-    const titulo = panel.querySelector(".titulo");
-    const detalle = panel.querySelector(".detalle");
-    const codigo = panel.querySelector(".codigo");
+  <footer>
+    <div class="contenedor">
+      OfficeSync · OE3 / RF7 · La cámara solo funciona bajo HTTPS o en localhost.
+    </div>
+  </footer>
 
-    function mostrar(tipo, textoTitulo, textoDetalle, textoCodigo) {
-      panel.className = tipo;
+  <script>
+    const chip = document.getElementById("chip");
+    const panelCuerpo = document.getElementById("resultado-cuerpo");
+    const titulo = document.getElementById("res-titulo");
+    const detalle = document.getElementById("res-detalle");
+    const codigo = document.getElementById("res-codigo");
+
+    function mostrar(tipo, chipText, textoTitulo, textoDetalle, textoCodigo) {
+      chip.dataset.estado = tipo;
+      chip.textContent = chipText;
+      panelCuerpo.className = "panel-cuerpo " + tipo;
       titulo.textContent = textoTitulo;
       detalle.textContent = textoDetalle;
       codigo.textContent = textoCodigo || "";
@@ -187,13 +345,13 @@
       (texto) => {
         const leido = texto.trim();
         if (leido.startsWith("MESA-")) {
-          mostrar("ok", "Mesa detectada", "El código corresponde a una mesa de OfficeSync.", leido);
+          mostrar("ok", "Mesa Detectada", "Mesa detectada", "El código corresponde a una mesa de OfficeSync.", leido);
         } else {
-          mostrar("error", "QR no válido para OfficeSync", "El código leído no es de una mesa.", leido);
+          mostrar("error", "No Válido", "QR no válido para OfficeSync", "El código leído no pertenece a una mesa de OfficeSync.", leido);
         }
       }
     ).catch((err) => {
-      mostrar("error", "No se pudo abrir la cámara",
+      mostrar("error", "Error Cámara", "No se pudo abrir la cámara",
         "Permite el acceso a la cámara y abre la página con HTTPS o desde localhost.", String(err));
     });
   </script>
